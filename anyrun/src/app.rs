@@ -204,12 +204,29 @@ impl Component for App {
                         }
                     }
                 },
-                #[local]
-                plugins -> gtk::Box {
-                    set_orientation: gtk::Orientation::Vertical,
-                    set_can_focus: false,
-                    set_css_classes: &["matches"],
+
+                // Scrollable results
+                #[name = "results"]
+                gtk::ScrolledWindow {
+                    set_hscrollbar_policy: gtk::PolicyType::Never,
+                    set_vscrollbar_policy: if config.scroll {
+                        gtk::PolicyType::Automatic
+                    } else {
+                        gtk::PolicyType::Never
+                    },
+
+                    set_min_content_height: config.min_results_height,
+                    set_max_content_height: config.max_results_height,
+                    set_css_classes: &["results"],
                     set_hexpand: true,
+
+                    #[local]
+                    plugins -> gtk::Box {
+                        set_orientation: gtk::Orientation::Vertical,
+                        set_can_focus: false,
+                        set_css_classes: &["matches"],
+                        set_hexpand: true,
+                    }
                 }
             }
         }
@@ -459,7 +476,22 @@ impl Component for App {
                     }
                     self.plugins.broadcast(PluginBoxInput::MaybeHide);
                 }
+
+                // Clamping the results height to min/max values set in config
+                // Also follows content size
+                let min_height = widgets.results.min_content_height();
+                let max_height = widgets.results.max_content_height();
+                let (_, natural_height, _, _) = self.plugins.widget().measure(gtk::Orientation::Vertical, -1);
+
+                let height = if max_height > 0 {
+                    natural_height.clamp(min_height, max_height)
+                } else {
+                    natural_height.max(min_height)
+                };
+
+                widgets.results.set_height_request(height);
             }
+
             // Handle clicked selections
             AppMsg::PluginOutput(PluginBoxOutput::RowSelected(index)) => {
                 for (i, plugin) in self.plugins.iter().enumerate() {
