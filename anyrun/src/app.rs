@@ -208,6 +208,7 @@ impl Component for App {
                 // Scrollable results
                 #[name = "results"]
                 gtk::ScrolledWindow {
+                    set_can_focus: false,
                     set_hscrollbar_policy: gtk::PolicyType::Never,
                     set_vscrollbar_policy: if config.scroll {
                         gtk::PolicyType::Automatic
@@ -477,8 +478,8 @@ impl Component for App {
                     self.plugins.broadcast(PluginBoxInput::MaybeHide);
                 }
 
-                // Clamping the results height to min/max values set in config
-                // Also follows content size
+                // Workaround for max_content_height not taking effect 
+                    // (the full height is set by min_content_height)
                 let min_height = widgets.results.min_content_height();
                 let max_height = widgets.results.max_content_height();
                 let (_, natural_height, _, _) = self.plugins.widget().measure(gtk::Orientation::Vertical, -1);
